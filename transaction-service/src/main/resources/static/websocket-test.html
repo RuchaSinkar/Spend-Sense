@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>SpendSense Alerts</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #0f0f0f; color: white; }
+        .alert { padding: 15px; margin: 10px 0; border-radius: 8px; }
+        .BUDGET_EXCEEDED { background: #ff000033; border: 1px solid red; }
+        .CRITICAL { background: #ff800033; border: 1px solid orange; }
+        .WARNING { background: #ffff0033; border: 1px solid yellow; }
+        input { padding: 8px; margin: 5px; border-radius: 4px; border: none; }
+        button { padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+<h2>🔔 SpendSense Live Alerts</h2>
+
+<div>
+    <input id="userId" placeholder="Enter userId (e.g. rahul_01)" value="rahul_01"/>
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+</div>
+
+<p id="status">Not connected</p>
+<div id="alerts"></div>
+
+<script>
+    let stompClient = null;
+
+    function connect() {
+        const userId = document.getElementById('userId').value;
+        const socket = new SockJS('http://localhost:8080/ws');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function () {
+            document.getElementById('status').innerText
+                = '✅ Connected as ' + userId;
+
+            // Subscribe to this user's alerts
+            stompClient.subscribe(
+                '/topic/alerts/' + userId,
+                function (message) {
+                    showAlert(JSON.parse(message.body));
+                }
+            );
+        });
+    }
+
+    function disconnect() {
+        if (stompClient) stompClient.disconnect();
+        document.getElementById('status').innerText
+            = 'Disconnected';
+    }
+
+    function showAlert(alert) {
+        const div = document.createElement('div');
+        div.className = 'alert ' + alert.type;
+        div.innerHTML = `
+            <strong>${alert.type}</strong><br/>
+            ${alert.message}<br/>
+            <small>Spent: ₹${alert.spent} |
+            Limit: ₹${alert.limit} |
+            ${alert.percentage}%</small>
+        `;
+        document.getElementById('alerts')
+            .prepend(div);
+    }
+</script>
+</body>
+</html>

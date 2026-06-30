@@ -18,6 +18,7 @@ public class Transaction {
     private String userId;
 
     @Column(nullable = false)
+
     private BigDecimal amount;
 
     @Column(nullable = false)

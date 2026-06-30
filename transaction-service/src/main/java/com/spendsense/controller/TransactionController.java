@@ -3,6 +3,7 @@ package com.spendsense.controller;
 import com.spendsense.dto.TransactionRequest;
 import com.spendsense.model.Transaction;
 import com.spendsense.service.TransactionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,12 +19,29 @@ public class TransactionController {
     private final TransactionService service;
 
     @PostMapping
-    public ResponseEntity<Transaction> create(@Valid @RequestBody TransactionRequest req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.save(req));
+    public ResponseEntity<Transaction> create(
+            @RequestBody TransactionRequest req,
+            HttpServletRequest request) {
+
+        // Get userId from JWT (set by JwtFilter)
+        String userId = (String) request
+                .getAttribute("userId");
+
+        req.setUserId(userId);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(service.saveTransaction(req));
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Transaction>> getByUser(@PathVariable String userId) {
-        return ResponseEntity.ok(service.getByUser(userId));
+    @GetMapping("/user")
+    public ResponseEntity<List<Transaction>> getMyTransactions(
+            HttpServletRequest request) {
+
+        String userId = (String) request
+                .getAttribute("userId");
+
+        return ResponseEntity.ok(
+                service.getByUser(userId));
     }
 }
